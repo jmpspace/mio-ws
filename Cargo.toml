@@ -3,3 +3,6 @@
 name = "mio-ws"
 version = "0.0.1"
 authors = ["John P Mayer Jr <john.p.mayer.jr@gmail.com>"]
+
+[dependencies.mio]
+git = "https://github.com/carllerche/mio"
