@@ -11,6 +11,3 @@ rustc-serialize = "0.2"
 [dependencies.rust-crypto]
 git = "https://github.com/DaGenix/rust-crypto.git"
 
-[dependencies.mio]
-git = "https://github.com/carllerche/mio"
-

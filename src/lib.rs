@@ -1,12 +1,11 @@
 
 // Unstable libraries
-#![feature(collections, core, io, net, unicode)]
+#![feature(collections, core, io, unicode)]
 
 #![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 
 extern crate                      crypto;
-extern crate                      mio;
 extern crate "rustc-serialize" as serialize;
 
 pub mod websocket;

@@ -1,7 +1,7 @@
 # mio-ws
 
-mio-ws is a lightweight websocket server with a focus on being
-as small as possible
+mio-ws is a lightweight websocket protocol implementation with a focus on being
+as small as possible and compatible with mio TcpStream
 
 [![Build Status](https://travis-ci.org/jmpspace/mio-ws.svg?branch=master)](https://travis-ci.org/jmpspace/mio-ws)
 
