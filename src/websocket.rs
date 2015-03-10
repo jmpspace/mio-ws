@@ -122,43 +122,48 @@ impl <S: Read + Write> WebSocketStream<S> {
         Ok(())
     }
 
-    /*
-       pub fn recv(&mut self) -> IoResult<String> {
+    pub fn recv(&mut self) -> Result<Vec<u8>, WsError> {
 
-       let _text_type = try!(self.stream.read_byte());
+        let mut text_type:  [u8;1] = [0;1];
+        let mut len_buffer: [u8;1] = [0;1];
 
-       let len1 = 0x7F & try!(self.stream.read_byte());
+        try!(self.stream.read(&mut text_type));
+        try!(self.stream.read(&mut len_buffer));
 
-       let length: uint = match len1 {
-       _ if len1 <= 125 =>
-       try!(FromPrimitive::from_u8(len1)),
-       _ if len1 == 126 => {
-       let mut l: [u8;2] = [0;2];
-       try!(self.stream.read(l));
-       let high: uint = try!(FromPrimitive::from_u8(l[0]));
-       let low: uint = try!(FromPrimitive::from_u8(l[1]));
-       (high << 8) | low
-       }
-       _ =>
-       return Err(WsError::Protocol(String::from_str("Message too big, not implemented")))
-       };
+        let len1 = len_buffer[0] & 0x7F;
 
-       println!("Receiving message with {} bytes", length);
+        let length: usize = match len1 {
+            _ if len1 <= 125 => {
+                try!(FromPrimitive::from_u8(len1).ok_or(WsError::Bitwise))
+            },
+            _ if len1 == 126 => {
+                let mut l: [u8;2] = [0;2];
+                try!(self.stream.read(&mut l));
+                let high: usize = try!(FromPrimitive::from_u8(l[0]).ok_or(WsError::Bitwise));
+                let low: usize = try!(FromPrimitive::from_u8(l[1]).ok_or(WsError::Bitwise));
+                (high << 8) | low
+            }
+            _ =>
+                return Err(WsError::Protocol(String::from_str("Message too big, not implemented")))
+        };
 
-       let mut mask: [u8;4] = [0;4];
-       try!(self.stream.read(mask));
+        println!("Receiving message with {} bytes", length);
 
-       let mut data: Vec<u8> = try!(self.stream.read_exact(length));
+        let mut mask: [u8;4] = [0;4];
+        try!(self.stream.read(&mut mask));
 
-       for i in range(0, length) {
-     *data.get_mut(i) = data[i] ^ mask[i % 4];
-     }
+        let mut data = Vec::new();
+        data.resize(length, 0);
 
-     let text = try!(String::from_utf8(data));
+        try!(self.stream.read(data.as_mut_slice()));
 
-     Ok(text)
+        for i in range(0, length) {
+            data[i] = data[i] ^ mask[i % 4];
+        }
 
-     }
-     */
+        Ok(data)
+
+    }
+
 }
 
