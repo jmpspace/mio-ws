@@ -1,0 +1,19 @@
+<html>
+  <body>
+    <script>
+      var f = function () {
+        var ws = new WebSocket("ws://localhost:9000/");
+        var print = function(label) { 
+          return function(event) {
+            console.log(label, event);
+          };
+        };
+        ws.onopen = print("open");
+        ws.onclose = print("close");
+        ws.onerror = print("error");
+        ws.onmessage = print("message");
+        return ws;
+      }
+    </script>
+  </body>
+</html>

@@ -4,5 +4,13 @@ name = "mio-ws"
 version = "0.0.1"
 authors = ["John P Mayer Jr <john.p.mayer.jr@gmail.com>"]
 
+[dependencies]
+peg = "0.1.0"
+rustc-serialize = "0.2"
+
+[dependencies.rust-crypto]
+git = "https://github.com/DaGenix/rust-crypto.git"
+
 [dependencies.mio]
 git = "https://github.com/carllerche/mio"
+
