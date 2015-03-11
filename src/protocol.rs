@@ -27,7 +27,7 @@ struct HttpHeader {
 }
 
 peg! http_grammar (r#"
-use websocket::HttpHeader;
+use protocol::HttpHeader;
 
 name -> String
     = [^:]+ { match_str.to_string() }

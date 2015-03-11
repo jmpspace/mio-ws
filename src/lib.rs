@@ -8,7 +8,7 @@
 extern crate                      crypto;
 extern crate "rustc-serialize" as serialize;
 
-pub mod websocket;
+pub mod protocol;
 
 #[test]
 fn it_works() {
