@@ -15,6 +15,7 @@ pub struct WebSocketStream<S> {
     stream: BufStream<S>
 }
 
+#[derive(Debug)]
 pub enum WsError { Bitwise, Io(Error), Parse(String), Handshake(String), Protocol(String) }
 
 impl FromError<Error> for WsError {
