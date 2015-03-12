@@ -93,6 +93,7 @@ impl <S: Read + Write> WebSocketStream<S> {
         let response = format!("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {}\r\n\r\n", challenge_response);
 
         try!(buf_stream.write(response.as_bytes()));
+        try!(buf_stream.flush());
 
         Ok(WebSocketStream{stream: buf_stream})
 
@@ -119,6 +120,7 @@ impl <S: Read + Write> WebSocketStream<S> {
         });
 
         try!(self.stream.write(&msg));
+        try!(self.stream.flush());
 
         Ok(())
     }
