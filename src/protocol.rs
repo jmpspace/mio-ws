@@ -54,16 +54,16 @@ impl <S: Read + Write> WebSocketStream<S> {
 
         let mut buf_stream = BufStream::new(stream);
 
-        let mut line = String::new();
-
-        try!(buf_stream.read_line(&mut line));
+        let mut method_line = String::new();
+        try!(buf_stream.read_line(&mut method_line));
 
         let mut headers = HashMap::new();
 
         loop {
-            try!(buf_stream.read_line(&mut line));
-            if line.trim().len() == 0 { break }
-            let header = try!(parse_header(&line));
+        	let mut header_line = String::new();
+            try!(buf_stream.read_line(&mut header_line));
+            if header_line.trim().len() == 0 { break }
+            let header = try!(parse_header(&header_line));
             headers.insert(header.name, header.value);
         }
 
