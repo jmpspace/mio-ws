@@ -1,14 +1,34 @@
 // unstable libraries
-#![feature(io,net)]
+#![feature(io,net,rand)]
 
 extern crate "websocket-protocol" as ws;
 
+use std::collections::{HashMap};
+use std::error::FromError;
 use std::io::{Error};
 use std::net::{TcpListener, TcpStream};
+use std::rand::{thread_rng};
+use std::rand::Rng;
+use std::string::{FromUtf8Error};
+use std::sync::mpsc::{Receiver, SendError, SyncSender, sync_channel};
 use std::thread;
 use ws::protocol::{WsError, WebSocketStream};
 
-fn handle_client(stream: TcpStream) -> Result<(), WsError> {
+#[derive(Debug)]
+enum TopFatalError { Fatal(String) }
+
+// Macro this
+impl FromError<WsError> for TopFatalError {
+    fn from_error(err: WsError) -> TopFatalError { TopFatalError::Fatal(format!("{:?}", err)) }
+}
+impl FromError<FromUtf8Error> for TopFatalError {
+    fn from_error(err: FromUtf8Error) -> TopFatalError { TopFatalError::Fatal(format!("{:?}", err)) }
+}
+impl<T> FromError<SendError<T>> for TopFatalError {
+    fn from_error(err: SendError<T>) -> TopFatalError { TopFatalError::Fatal(format!("{:?}", err)) }
+}
+
+fn handle_client(stream: TcpStream, client_id: ClientID, rx_from_mux: Receiver<MuxMessage>, tx_to_mux: SyncSender<ClientMessage>) -> Result<(), TopFatalError> {
 
     println!("Handling client");
     
@@ -16,19 +36,42 @@ fn handle_client(stream: TcpStream) -> Result<(), WsError> {
     
     println!("Opened ws");
 
-    try!(ws.send(format!("Test message").as_bytes()));
+    try!(ws.send(format!("Hello, Client").as_bytes()));
     
     loop {
         let msg = try!(ws.recv());
-        try!(ws.send(&msg[..]));
+        try!(tx_to_mux.send(ClientMessage::Chat(client_id, try!(String::from_utf8(msg)))));
     }
     
 }
+
+type ClientID = i64;
+
+enum ClientMessage { Chat(ClientID, String), Disconnect(ClientID) }
+
+enum MuxMessage { Chat(String) }
 
 fn run() -> Result<(), Error> {
 
     let listener = try!(TcpListener::bind("0.0.0.0:9000"));
 
+    let mut clients: HashMap<ClientID, SyncSender<MuxMessage>> = HashMap::new();
+
+    let (tx_to_mux, rx_from_clients) = sync_channel(0);
+
+    // TODO setup mux loop
+    thread::spawn(move||{
+        for client_msg in rx_from_clients.iter() {
+            match client_msg {
+                ClientMessage::Chat(client_id, s) => {
+                    println!("Got message from {}, {:?}", client_id, s);
+                }
+                ClientMessage::Disconnect(client_id) => {}
+            }
+        }
+    });
+
+    // Handle incoming clients
     for stream in listener.incoming() {
         
         match stream {
@@ -36,12 +79,16 @@ fn run() -> Result<(), Error> {
                 println!("Accept error: {:?}", e); 
             }
             Ok(stream) => {
-              thread::spawn(move|| {
-                match handle_client(stream) {
-                    Ok(()) => println!("Client quit without error"),
-                    Err(e) => println!("Client exited with error: {:?}", e)
-                };
-              });
+                let client_id: ClientID = thread_rng().gen();
+                let (tx_to_client, rx_from_mux) = sync_channel(0);
+                clients.insert(client_id, tx_to_client);
+                let local_tx_to_mux = tx_to_mux.clone();
+                thread::spawn(move|| {
+                    match handle_client(stream, client_id, rx_from_mux, local_tx_to_mux) {
+                        Ok(()) => println!("Client quit without error"),
+                        Err(e) => println!("Client exited with error: {:?}", e)
+                    };
+                });
             }
         }
     }
