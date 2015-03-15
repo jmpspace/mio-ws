@@ -12,7 +12,8 @@ use std::rand::Rng;
 use std::string::{FromUtf8Error};
 use std::sync::mpsc::{Receiver, SendError, SyncSender, sync_channel};
 use std::thread;
-use ws::protocol::{WsError, WebSocketStream};
+
+use ws::protocol::{TryClone, WsError, WebSocketStream};
 
 #[derive(Debug)]
 enum TopFatalError { Fatal(String) }
@@ -38,8 +39,24 @@ fn handle_client(stream: TcpStream, client_id: ClientID, rx_from_mux: Receiver<M
 
     try!(ws.send(format!("Hello, Client").as_bytes()));
     
+    let mut ws_send = try!(ws.try_clone());
+    let mut ws_recv = try!(ws.try_clone());
+
+    thread::spawn(move||{
+        for mux_msg in rx_from_mux.iter() {
+            match mux_msg {
+                MuxMessage::Chat(msg) => {
+                    match ws_send.send(&msg.into_bytes()[..]) {
+                        Ok(_) => {},
+                        Err(e) => panic!("Failed sending to ws")
+                    }
+                }
+            }
+        }
+    });
+
     loop {
-        let msg = try!(ws.recv());
+        let msg = try!(ws_recv.recv());
         try!(tx_to_mux.send(ClientMessage::Chat(client_id, try!(String::from_utf8(msg)))));
     }
     
@@ -59,7 +76,6 @@ fn run() -> Result<(), Error> {
 
     let (tx_to_mux, rx_from_clients) = sync_channel(0);
 
-    // TODO setup mux loop
     thread::spawn(move||{
         for client_msg in rx_from_clients.iter() {
             match client_msg {

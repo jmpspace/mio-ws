@@ -6,8 +6,10 @@ use serialize::base64::{Config, Newline, Standard, ToBase64};
 use std::collections::HashMap;
 use std::error::FromError;
 use std::io::{BufRead, BufStream, Error, Read, Write};
+use std::net::TcpStream;
 use std::num::FromPrimitive;
 //use std::option::Option;
+//use std::result::Result;
 
 static WS_MAGIC_GUID : &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -17,6 +19,32 @@ pub struct WebSocketStream<S> {
 
 #[derive(Debug)]
 pub enum WsError { Bitwise, Io(Error), Parse(String), Handshake(String), Protocol(String) }
+
+// Move this into a different spot
+pub trait TryClone {
+    fn try_clone(&self) -> Result<Self, WsError>;
+}
+
+impl<S> TryClone for WebSocketStream<S> where S: Read + Write + TryClone {
+    fn try_clone(&self) -> Result<WebSocketStream<S>, WsError> {
+        Ok(WebSocketStream{stream: try!(self.stream.try_clone())})
+    }
+}
+
+impl<S> TryClone for BufStream<S> where S: Read + Write + TryClone {
+    fn try_clone(&self) -> Result<BufStream<S>, WsError> {
+        let inner = self.get_ref();
+        let clone_inner = try!(inner.try_clone());
+        Ok(BufStream::new(clone_inner))
+    }
+}
+
+// Move this into another different spot, distinct from above
+impl TryClone for TcpStream {
+    fn try_clone(&self) -> Result<TcpStream, WsError> {
+        Ok(try!(self.try_clone()))
+    }
+}
 
 impl FromError<Error> for WsError {
     fn from_error(err: Error) -> WsError { WsError::Io(err) }
@@ -48,20 +76,20 @@ fn parse_header(line: &String) -> Result<HttpHeader, WsError> {
     }
 }
 
-impl <S: Read + Write> WebSocketStream<S> {
+impl <S: Read + Write + TryClone> WebSocketStream<S> {
 
     pub fn new(stream: S) -> Result<WebSocketStream<S>, WsError> {
 
-        let mut buf_stream = BufStream::new(stream);
+        let mut stream = BufStream::new(stream);
 
         let mut method_line = String::new();
-        try!(buf_stream.read_line(&mut method_line));
+        try!(stream.read_line(&mut method_line));
 
         let mut headers = HashMap::new();
 
         loop {
         	let mut header_line = String::new();
-            try!(buf_stream.read_line(&mut header_line));
+            try!(stream.read_line(&mut header_line));
             if header_line.trim().len() == 0 { break }
             let header = try!(parse_header(&header_line));
             headers.insert(header.name, header.value);
@@ -92,10 +120,10 @@ impl <S: Read + Write> WebSocketStream<S> {
 
         let response = format!("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {}\r\n\r\n", challenge_response);
 
-        try!(buf_stream.write(response.as_bytes()));
-        try!(buf_stream.flush());
+        try!(stream.write(response.as_bytes()));
+        try!(stream.flush());
 
-        Ok(WebSocketStream{stream: buf_stream})
+        Ok(WebSocketStream{stream: stream})
 
     }
 
