@@ -1,5 +1,5 @@
 
-#![feature(collections, core)]
+#![feature(collections, core, str_char)]
 #![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 

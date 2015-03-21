@@ -12,5 +12,5 @@ rustc-serialize = "0.3.*"
 rand = "0.2.*"
 
 [dependencies.rust-crypto]
-git = "https://github.com/DaGenix/rust-crypto.git"
-
+git = "https://github.com/marcusklaas/rust-crypto.git"
+rev = "cd626362974ace1f49c457b04717503d3ff64a17"

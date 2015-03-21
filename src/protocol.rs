@@ -54,7 +54,7 @@ impl FromError<http_grammar::ParseError> for WsError {
     fn from_error(err: http_grammar::ParseError) -> WsError { WsError::Parse(err) }
 }
 
-struct HttpHeader {
+pub struct HttpHeader {
     name: String,
     value: String
 }
