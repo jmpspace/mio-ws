@@ -1,10 +1,5 @@
 
-// Unstable libraries
-#![feature(collections, core, io, unicode)]
-
-// This should be moved out
-#![feature(net)]
-
+#![feature(collections, core)]
 #![feature(plugin)]
 #![plugin(peg_syntax_ext)]
 

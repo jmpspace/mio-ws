@@ -1,21 +1,13 @@
-# mio-ws
+# websocket-protocol
 
-mio-ws is a lightweight websocket protocol implementation with a focus on being
-as small as possible and compatible with mio TcpStream
-
-[![Build Status](https://travis-ci.org/jmpspace/mio-ws.svg?branch=master)](https://travis-ci.org/jmpspace/mio-ws)
-
-## Features
-
-* Listen on a port
-* Send and recieve messages
-* However threads work in mio (TODO learn this)
+I'm implementing just the websocket protocol. It is stack agnostic - you need to provide a stream which can read, write, and be cloned.
 
 ## Non goals
 
-* Full standards compliance
-* SSL - use a reverse-proxy damnit!
+* SSL - use a reverse-proxy instead
 
-## Platforms
+## Example Platforms
 
-https://github.com/carllerche/mio#platforms
+Rust std::net::TcpStream
+
+TODO - https://github.com/carllerche/mio#platforms

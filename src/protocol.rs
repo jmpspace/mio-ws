@@ -18,7 +18,7 @@ pub struct WebSocketStream<S> {
 }
 
 #[derive(Debug)]
-pub enum WsError { Bitwise, Io(Error), Parse(String), Handshake(String), Protocol(String) }
+pub enum WsError { Bitwise, Io(String), Parse(http_grammar::ParseError), Handshake(String), Protocol(String) }
 
 // Move this into a different spot
 pub trait TryClone {
@@ -47,7 +47,11 @@ impl TryClone for TcpStream {
 }
 
 impl FromError<Error> for WsError {
-    fn from_error(err: Error) -> WsError { WsError::Io(err) }
+    fn from_error(err: Error) -> WsError { WsError::Io(err.detail().unwrap_or(String::from_str(err.description()))) }
+}
+
+impl FromError<http_grammar::ParseError> for WsError {
+    fn from_error(err: http_grammar::ParseError) -> WsError { WsError::Parse(err) }
 }
 
 struct HttpHeader {
@@ -69,13 +73,6 @@ header -> HttpHeader
     = n:name ": " v:value { HttpHeader{ name: n, value: v } }
 "#);
 
-fn parse_header(line: &String) -> Result<HttpHeader, WsError> {
-    match http_grammar::header(&line.trim()[..]) {
-        Err(err) => Err(WsError::Handshake(err)),
-        Ok(header) => Ok(header)
-    }
-}
-
 impl <S: Read + Write + TryClone> WebSocketStream<S> {
 
     pub fn new(stream: S) -> Result<WebSocketStream<S>, WsError> {
@@ -90,8 +87,9 @@ impl <S: Read + Write + TryClone> WebSocketStream<S> {
         loop {
         	let mut header_line = String::new();
             try!(stream.read_line(&mut header_line));
-            if header_line.trim().len() == 0 { break }
-            let header = try!(parse_header(&header_line));
+            let header_line = String::from_str(header_line.trim());
+            if header_line.len() == 0 { break }
+            let header = try!(http_grammar::header(&header_line));
             headers.insert(header.name, header.value);
         }
 
@@ -103,7 +101,7 @@ impl <S: Read + Write + TryClone> WebSocketStream<S> {
                 let mut hasher = Sha1::new();
                 let mut local = challenge.clone();
                 local.push_str(WS_MAGIC_GUID);
-                println!("Using {}", local);
+                println!("Using challenge and guid '{}'", local);
                 hasher.input(local.as_bytes());
                 let mut output = [0;20];
                 hasher.result(&mut output);
@@ -116,7 +114,7 @@ impl <S: Read + Write + TryClone> WebSocketStream<S> {
             }
         };
 
-        println!("Using {}", challenge_response);
+        println!("Sending response '{}'", challenge_response);
 
         let response = format!("HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {}\r\n\r\n", challenge_response);
 
@@ -159,6 +157,9 @@ impl <S: Read + Write + TryClone> WebSocketStream<S> {
         let mut len_buffer: [u8;1] = [0;1];
 
         try!(self.stream.read(&mut text_type));
+
+        println!("Parsing message with type {:?}", text_type);
+
         try!(self.stream.read(&mut len_buffer));
 
         let len1 = len_buffer[0] & 0x7F;
@@ -188,7 +189,7 @@ impl <S: Read + Write + TryClone> WebSocketStream<S> {
 
         try!(self.stream.read(data.as_mut_slice()));
 
-        for i in range(0, length) {
+        for i in (0 .. length) {
             data[i] = data[i] ^ mask[i % 4];
         }
 
