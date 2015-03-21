@@ -14,3 +14,7 @@ rand = "0.2.*"
 [dependencies.rust-crypto]
 git = "https://github.com/marcusklaas/rust-crypto.git"
 rev = "cd626362974ace1f49c457b04717503d3ff64a17"
+
+[dev-dependencies.mio]
+git = "https://github.com/fhartwig/mio.git"
+rev = "71dc6f1fc030d2156f10867a914a567904d497b0"

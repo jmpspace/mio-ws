@@ -2,7 +2,8 @@
   <body>
     <script>
       var f = function () {
-        var ws = new WebSocket("ws://localhost:9000/");
+        var uri = "ws://" + window.location.hostname + ":9000/";
+        var ws = new WebSocket(uri);
         var print = function(label) { 
           return function(event) {
             console.log(label, event);
