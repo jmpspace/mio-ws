@@ -47,7 +47,7 @@ impl TryClone for TcpStream {
 }
 
 impl FromError<Error> for WsError {
-    fn from_error(err: Error) -> WsError { WsError::Io(err.detail().unwrap_or(String::from_str(err.description()))) }
+    fn from_error(err: Error) -> WsError { WsError::Io(err.to_string()) }
 }
 
 impl FromError<http_grammar::ParseError> for WsError {

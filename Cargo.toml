@@ -6,8 +6,10 @@ authors = ["John P Mayer Jr <john.p.mayer.jr@gmail.com>"]
 
 [dependencies]
 peg = "0.2.*"
-rand = "0.2.*"
 rustc-serialize = "0.3.*"
+
+[dev-dependencies]
+rand = "0.2.*"
 
 [dependencies.rust-crypto]
 git = "https://github.com/DaGenix/rust-crypto.git"

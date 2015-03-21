@@ -1,7 +1,4 @@
 
-// unstable
-#![feature(io)]
-
 extern crate                         rand;
 extern crate "websocket-protocol" as ws;
 
@@ -40,7 +37,7 @@ fn handle_client(stream: TcpStream, client_id: ClientID, rx_from_mux: Receiver<M
 
     println!("Handling client");
     
-    let mut ws = try!(WebSocketStream::new(stream));
+    let ws = try!(WebSocketStream::new(stream));
     
     println!("Opened ws");
 
